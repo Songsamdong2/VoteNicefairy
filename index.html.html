@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>투표 웹사이트</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    
+    h1 {
+      text-align: center;
+    }
+    
+    .container {
+      max-width: 400px;
+      margin: 0 auto;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 10px;
+    }
+    
+    input[type="text"] {
+      width: 100%;
+      padding: 5px;
+    }
+    
+    button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    
+    #result {
+      margin-top: 20px;
+      text-align: center;
+    }
+    
+    #voters {
+      margin-top: 20px;
+    }
+    
+    #voters table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    #voters th, #voters td {
+      padding: 8px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    
+    #voters th {
+      background-color: #f2f2f2;
+    }
+    
+    .delete-button {
+      background-color: #f44336;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>투표하기</h1>
+    <label for="name">이름:</label>
+    <input type="text" id="name" placeholder="이름을 입력하세요">
+    <label for="location">투표 장소:</label>
+    <select id="location">
+      <option value="부산대">부산대</option>
+      <option value="서면">서면</option>
+      <option value="남천">남천</option>
+      <option value="광안">광안</option>
+    </select>
+    <button onclick="vote()">투표</button>
+    <div id="result"></div>
+    <div id="voters"></div>
+  </div>
+
+  <script>
+    function vote() {
+      var name = document.getElementById("name").value;
+      var location = document.getElementById("location").value;
+      
+      if (name !== "") {
+        var voteData = {
+          name: name,
+          location: location
+        };
+        
+        // 이전에 저장된 투표 목록 가져오기
+        var previousVotes = localStorage.getItem("votes");
+        var votes = [];
+        if (previousVotes) {
+          votes = JSON.parse(previousVotes);
+        }
+        
+        // 새로운 투표 추가
+        votes.push(voteData);
+        
+        // 투표 결과를 로컬 스토리지에 저장
+        localStorage.setItem("votes", JSON.stringify(votes));
+        
+        // 투표 완료 메시지 표시
+        var result = document.getElementById("result");
+        result.innerHTML = "투표 완료! " + name + "님이 " + location + "에 투표하셨습니다.";
+        
+        // 입력 필드 초기화
+        document.getElementById("name").value = "";
+        document.getElementById("location").selectedIndex = 0;
+        
+        // 투표자 목록 업데이트
+        updateVotersList();
+      }
+    }
+    
+    function updateVotersList() {
+      // 저장된 투표 목록 가져오기
+      var previousVotes = localStorage.getItem("votes");
+      var votes = [];
+      if (previousVotes) {
+        votes = JSON.parse(previousVotes);
+      }
+      
+      // 투표자 목록 엘리먼트
+      var votersList = document.getElementById("voters");
+      
+      // 목록 초기화
+      votersList.innerHTML = "";
+      
+      // 테이블 생성
+      var table = document.createElement("table");
+      
+      // 투표자 목록 생성
+      var locations = ["부산대", "서면", "남천", "광안"];
+      locations.forEach(function(location) {
+        // 해당 투표 장소의 투표자들 필터링
+        var filteredVotes = votes.filter(function(vote) {
+          return vote.location === location;
+        });
+        
+        if (filteredVotes.length > 0) {
+          // 투표자 목록을 보여줄 테이블 행 생성
+          var row = document.createElement("tr");
+          var locationCell = document.createElement("td");
+          locationCell.textContent = location;
+          locationCell.style.cursor = "pointer";
+          locationCell.addEventListener("click", function() {
+            showVoters(filteredVotes);
+          });
+          row.appendChild(locationCell);
+          
+          var votersCell = document.createElement("td");
+          votersCell.textContent = filteredVotes.map(function(vote) {
+            return vote.name;
+          }).join(", ");
+          row.appendChild(votersCell);
+          
+          table.appendChild(row);
+        }
+      });
+      
+      // 테이블을 투표자 목록 엘리먼트에 추가
+      votersList.appendChild(table);
+    }
+    
+    function showVoters(voters) {
+      // 투표자 목록 엘리먼트
+      var votersList = document.getElementById("voters");
+      
+      // 목록 초기화
+      votersList.innerHTML = "";
+      
+      // 테이블 생성
+      var table = document.createElement("table");
+      
+      // 투표자 목록 생성
+      var tbody = document.createElement("tbody");
+      voters.forEach(function(vote) {
+        var voterRow = document.createElement("tr");
+        var nameCell = document.createElement("td");
+        nameCell.textContent = vote.name;
+        voterRow.appendChild(nameCell);
+        
+        var deleteButtonCell = document.createElement("td");
+        var deleteButton = document.createElement("button");
+        deleteButton.textContent = "삭제";
+        deleteButton.className = "delete-button";
+        deleteButton.addEventListener("click", function() {
+          deleteVote(vote);
+        });
+        deleteButtonCell.appendChild(deleteButton);
+        
+        voterRow.appendChild(deleteButtonCell);
+        tbody.appendChild(voterRow);
+      });
+      
+      // 테이블에 목록 추가
+      table.appendChild(tbody);
+      
+      // 테이블을 투표자 목록 엘리먼트에 추가
+      votersList.appendChild(table);
+    }
+    
+    function deleteVote(vote) {
+      // 저장된 투표 목록 가져오기
+      var previousVotes = localStorage.getItem("votes");
+      var votes = [];
+      if (previousVotes) {
+        votes = JSON.parse(previousVotes);
+      }
+      
+      // 선택한 투표 제거
+      var index = votes.findIndex(function(v) {
+        return v.name === vote.name && v.location === vote.location;
+      });
+      
+      if (index !== -1) {
+        votes.splice(index, 1);
+        
+        // 투표 결과를 로컬 스토리지에 저장
+        localStorage.setItem("votes", JSON.stringify(votes));
+        
+        // 투표자 목록 업데이트
+        updateVotersList();
+      }
+    }
+    
+    // 매일 00:00에 투표 결과 리셋
+    function resetVotes() {
+      localStorage.removeItem("votes");
+      updateVotersList();
+      
+      // 다음 리셋까지 대기
+      var now = new Date();
+      var nextReset = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+      var timeUntilReset = nextReset - now;
+      setTimeout(resetVotes, timeUntilReset);
+    }
+    
+    // 페이지 로드 시 투표자 목록 초기화
+    updateVotersList();
+    
+    // 다음 리셋까지 대기
+    var now = new Date();
+    var nextReset = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+    var timeUntilReset = nextReset - now;
+    setTimeout(resetVotes, timeUntilReset);
+  </script>
+</body>
+</html>
